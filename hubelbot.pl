@@ -20,12 +20,12 @@ $VERSION = '1.00';
 # Config
 #--------------------------------------------------------------------
 our $botname            = "hubelbot";
-our $debug              = 1;
+our $debug              = 0;
 our $inform             = 1;
 our $datadir            = Irssi::get_irssi_dir() . "/hubeldata";
 our $announce1          = 0;
 our $announce_msg       = "";
-our $megahubel          = "20";
+our $megahubel          = 20;
 our $announce_megahubel = "";
 our $megahubel_msg      = "";
 
@@ -51,21 +51,23 @@ sub process_incoming {
 	my $ccount = 0;
 	$pcount += () = $msg =~ /(jemand|irgendwer|man|einer)/i;
 	$ccount += () = $msg =~ /(sollte|m\xfcsste|muesste|k\xf6nnte|koennte|h\xe4tte|haette|br\xe4uchte|braeuchte|m\xf6chte|moechte)/i;
-	iprint($target . "/" . $nick . " => pcount: " . $pcount . " | ccount: " . $ccount);
-	dprint($msg);
+	dprint($target . "/" . $nick . " => pcount: " . $pcount . " | ccount: " . $ccount);
 	
 	if ($pcount > 0 & $ccount > 0) {
 		my $hubel = set_totalcount($nick, "hub");
 		my $total = set_totalcount($nick, "all");
 		my $ratio = $hubel / $total;
-		$win->print("Awarding one Hubel to " . $nick .
-			    "new ratio: " . $hubel . "/" . $total . " = " . $ratio , "MESSAGES");
+		$win->print("Awarding one Hubel to " . $nick . " - new ratio: " . 
+			$hubel . "/" . $total . " = " . $ratio , "MESSAGES");
+		iprint($msg);
+
 	} else {
 		my $hubel = get_totalcount($nick, "hub");
 		my $total = set_totalcount($nick, "all");
 		my $ratio = $hubel / $total;
-		dprint("New line for " . $nick . " - new ratio: " .
+		iprint("New line for " . $nick . " - new ratio: " .
 			$hubel . "/" . $total . " = " . $ratio);
+		dprint($msg);
 	}
 }
 
