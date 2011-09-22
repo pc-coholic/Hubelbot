@@ -3,6 +3,7 @@ use vars qw($VERSION %IRSSI);
 
 use Irssi;
 use Irssi::UI;
+use Switch;
 
 $VERSION = '1.00';
 %IRSSI = (
@@ -20,6 +21,7 @@ $VERSION = '1.00';
 # Config
 #--------------------------------------------------------------------
 our $botname            = "hubelbot";
+our $botkeyword		= "hubel"; # No leading ! - it's added automatically
 our $debug              = 0;
 our $inform             = 1;
 our $datadir            = Irssi::get_irssi_dir() . "/hubeldata";
@@ -28,6 +30,9 @@ our $announce_msg       = "";
 our $megahubel          = 20;
 our $announce_megahubel = "";
 our $megahubel_msg      = "";
+
+# sven: wenn der konjunktiv groesser als 0.2 hubel wird, wirds kritisch
+our $critical_level     = 0.2;
 
 #--------------------------------------------------------------------
 # Run on startup
@@ -47,23 +52,57 @@ mkdir "$datadir", 0777 unless -d "$datadir";
 #--------------------------------------------------------------------
 sub process_incoming {
 	my ($server, $msg, $nick, $address, $target) = @_;
+
+	if (substr($msg, 0, 1) eq '!') {
+		process_command(@_);
+	} else {
+		process_hubel(@_);
+	}
+}
+
+#--------------------------------------------------------------------
+# Count hubels and do stuff
+#--------------------------------------------------------------------
+sub process_command() {
+	my ($server, $msg, $nick, $address, $target) = @_;
+	
+	my @words = ($msg =~ /(\w+)/g);
+	
+	if (($words[0] eq $botkeyword) && ($words[1] eq "")) {
+		print_hubels($nick, $server, $target, $nick);
+	} elsif (($words[0] eq $botkeyword) && ($words[1] ne "")) {
+		print_hubels($words[1], $server, $target, $nick);
+	} elsif ($words[0] eq $botkeyword) {
+		$server->command("/notice $target $nick: Sorry, command not understood");
+	} else {
+		process_hubel(@_);
+	}
+}
+
+#--------------------------------------------------------------------
+# Count hubels and do stuff
+#--------------------------------------------------------------------
+sub process_hubel() {
+	my ($server, $msg, $nick, $address, $target) = @_;
+	
 	my $pcount = 0;
 	my $ccount = 0;
+	
 	$pcount += () = $msg =~ /(jemand|irgendwer|man|einer)/i;
 	$ccount += () = $msg =~ /(sollte|m\xfcsste|muesste|k\xf6nnte|koennte|h\xe4tte|haette|br\xe4uchte|braeuchte|m\xf6chte|moechte)/i;
 	dprint($target . "/" . $nick . " => pcount: " . $pcount . " | ccount: " . $ccount);
 	
 	if ($pcount > 0 & $ccount > 0) {
-		my $hubel = set_totalcount($nick, "hub");
-		my $total = set_totalcount($nick, "all");
+		my $hubel = set_count($nick, "hub");
+		my $total = get_count($nick, "all");
 		my $ratio = $hubel / $total;
 		$win->print("Awarding one Hubel to " . $nick . " - new ratio: " . 
 			$hubel . "/" . $total . " = " . $ratio , "MESSAGES");
 		iprint($msg);
 
 	} else {
-		my $hubel = get_totalcount($nick, "hub");
-		my $total = set_totalcount($nick, "all");
+		my $hubel = get_count($nick, "hub");
+		my $total = set_count($nick, "all");
 		my $ratio = $hubel / $total;
 		iprint("New line for " . $nick . " - new ratio: " .
 			$hubel . "/" . $total . " = " . $ratio);
@@ -72,13 +111,32 @@ sub process_incoming {
 }
 
 #--------------------------------------------------------------------
+# print nice text with hubels for person
+#--------------------------------------------------------------------
+sub print_hubels() {
+	my ($nick, $server, $target, $requestor) = @_;
+	
+	my $ratio = get_count($nick, "hub") / get_count($nick, "all");
+
+	my $msg;
+	
+	if ($nick eq $requestor) {
+		$msg = "$requestor: You currently rank at $ratio hubel.";
+	} else {
+		$msg = "$requestor: $nick currently ranks at $ratio hubel.";
+	}
+	
+	$server->command("/notic $target $msg");
+}
+
+#--------------------------------------------------------------------
 # Add 1 to count of total number of lines written by a person
 # If no countfile exists yet, create a new one
 #--------------------------------------------------------------------
-sub set_totalcount() {
+sub set_count() {
 	my ($nick, $type) = @_;
 	
-	my $count = get_totalcount($nick, $type);
+	my $count = get_count($nick, $type);
 	my $filename = $datadir . "/" . $nick . "." . $type;
 
 	open FILE, ">", $filename or die $!;
@@ -93,7 +151,7 @@ sub set_totalcount() {
 #--------------------------------------------------------------------
 # Get count of total number of lines written by a person
 #--------------------------------------------------------------------
-sub get_totalcount() {
+sub get_count() {
 	my ($nick, $type) = @_;
 	my $count;
 	my $filename = $datadir . "/" . $nick . "." . $type;
@@ -102,6 +160,10 @@ sub get_totalcount() {
 		$count = <$in>;
 	} else {
 		$count = 0;
+	}
+	
+	if (($type eq "all") && ($count == 0)) {
+		$count = 1;
 	}
 
 	return $count;
