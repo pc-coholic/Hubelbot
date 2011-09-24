@@ -30,6 +30,7 @@ our $announce_msg       = "";
 our $megahubel          = 20;
 our $announce_megahubel = "";
 our $megahubel_msg      = "";
+our $botmaster          = "martin";
 
 # sven: wenn der konjunktiv groesser als 0.2 hubel wird, wirds kritisch
 our $critical_level     = 0.2;
@@ -67,8 +68,20 @@ sub process_command() {
 	my ($server, $msg, $nick, $address, $target) = @_;
 	
 	my @words = ($msg =~ /(\w+)/g);
-	
-	if (($words[0] eq $botkeyword) && ($words[1] eq "")) {
+
+	if (($words[0] eq  $botkeyword) && ($words[1] eq "award") && ($words[2] ne "")) {
+		if ($nick eq $botmaster) {
+			set_count($words[2], "hub");
+			print_hubels($words[2], $server, $target, $words[2]);
+			$win->print("Awarding one complementary Hubel to " . $words[2], "MESSAGES");
+		} else {
+			$msg = "$words[2]: Hahahaha... No.";
+			$server->command("/notic $target $msg");
+		}
+	} elsif (($words[0] eq  $botkeyword) && ($words[1] eq "clear") && ($words[2] ne "") && ($nick eq $botmaster)) {
+		#clear hubellog
+		$win->print("Clearing hubelstats of " . $words[2], "MESSAGES");		
+	} elsif (($words[0] eq $botkeyword) && ($words[1] eq "")) {
 		print_hubels($nick, $server, $target, $nick);
 	} elsif (($words[0] eq $botkeyword) && ($words[1] ne "")) {
 		print_hubels($words[1], $server, $target, $nick);
