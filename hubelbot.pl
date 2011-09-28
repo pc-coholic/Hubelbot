@@ -4,6 +4,7 @@ use vars qw($VERSION %IRSSI);
 use Irssi;
 use Irssi::UI;
 use Switch;
+use utf8;
 
 $VERSION = '1.00';
 %IRSSI = (
