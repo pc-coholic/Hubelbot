@@ -76,8 +76,9 @@ sub process_command() {
 			print_hubels($words[2], $server, $target, $words[2]);
 			$win->print("Awarding one complementary Hubel to " . $words[2], "MESSAGES");
 		} else {
-			$msg = "$words[2]: Hahahaha... No.";
-			$server->command("/notic $target $msg");
+                        $msg = "$nick: Hahahaha... No.";
+                        $server->command("/notice $target $msg");
+
 		}
 	} elsif (($words[0] eq  $botkeyword) && ($words[1] eq "clear") && ($words[2] ne "") && ($nick eq $botmaster)) {
 		#clear hubellog
@@ -103,7 +104,7 @@ sub process_hubel() {
 	my $ccount = 0;
 	
 	$pcount += () = $msg =~ /(jemand|irgendwer|man|einer)/i;
-	$ccount += () = $msg =~ /(sollte|m\xfcsste|muesste|k\xf6nnte|koennte|h\xe4tte|haette|br\xe4uchte|braeuchte|m\xf6chte|moechte)/i;
+	$ccount += () = $msg =~ /(sollte|m\xfcsste|muesste|müsste|k\xf6nnte|koennte|könnte|h\xe4tte|haette|hätte|br\xe4uchte|braeuchte|bräuchte|m\xf6chte|moechte|möchte)/i;
 	dprint($target . "/" . $nick . " => pcount: " . $pcount . " | ccount: " . $ccount);
 	
 	if ($pcount > 0 & $ccount > 0) {
